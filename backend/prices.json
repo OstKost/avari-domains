@@ -1,0 +1,36 @@
+{
+  "source": "https://porkbun.com/products/domains",
+  "checkedAt": "2026-09-28",
+  "currency": "USD",
+  "zones": {
+    "com": {"firstYear": 11.08, "renewal": 11.08},
+    "net": {"firstYear": 12.52, "renewal": 12.52},
+    "org": {"firstYear": 7.98, "renewal": 11.84, "promo": true, "conditions": "Акция на первый год для обычных доменов"}
+  },
+  "other": {
+    "Namecheap": {
+      "source": "https://www.namecheap.com/domains/",
+      "checkedAt": "2026-09-28",
+      "currency": "USD",
+      "zones": {
+        "com": {"firstYear": 11.28, "renewal": 18.48, "promo": true, "conditions": "Акция на первый год; премиальные домены исключены"},
+        "net": {"firstYear": 12.48, "renewal": 18.58, "promo": true, "conditions": "Акция на первый год; премиальные домены исключены"},
+        "org": {"firstYear": 8.48, "renewal": 18.98, "promo": true, "conditions": "Акция на первый год; премиальные домены исключены"}
+      }
+    },
+    "GoDaddy": {"source": "https://www.godaddy.com/domains", "checkedAt": "2026-09-28", "currency": "USD", "zones": {}},
+    "REG.RU": {"source": "https://www.reg.ru/domain/new/", "checkedAt": "2026-09-28", "currency": "RUB", "zones": {}},
+    "Timeweb": {
+      "source": "https://timeweb.com/ru/services/domains/",
+      "checkedAt": "2026-09-28",
+      "currency": "RUB",
+      "zones": {
+        "com": {"firstYear": 1560, "renewal": 1810, "promo": true, "conditions": "Акция на первый год"},
+        "net": {"firstYear": 1660, "renewal": 1990},
+        "org": {"firstYear": 1640, "renewal": 1780},
+        "ru": {"firstYear": 200, "renewal": 399, "promo": true, "conditions": "Акция на первый год"},
+        "xn--p1ai": {"firstYear": 200, "renewal": 399, "promo": true, "conditions": "Акция на первый год"}
+      }
+    }
+  }
+}

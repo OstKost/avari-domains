@@ -1,0 +1,143 @@
+openapi: 3.1.0
+info:
+  title: Avari Domains API
+  version: 1.0.0
+  description: Анонимная cookie связывает историю и статистику с текущим браузером.
+servers:
+  - url: /
+paths:
+  /api/health:
+    get:
+      responses:
+        '200': {description: Сервис работает}
+  /api/check:
+    post:
+      description: Проверка ограничена 20 запросами в минуту с burst 10 на IP, включая кеш.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [input]
+              properties:
+                input: {type: string, maxLength: 2048}
+      responses:
+        '200':
+          description: Результат проверки
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '429':
+          description: Лимит запросов, Retry-After в секундах
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApiError'}
+        '503': {$ref: '#/components/responses/Error'}
+  /api/history:
+    get:
+      parameters:
+        - in: query
+          name: page
+          schema: {type: integer, minimum: 0, default: 0}
+      responses:
+        '200':
+          description: Не более 20 снимков текущего браузера
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Result'}}
+                  page: {type: integer}
+                  pageSize: {type: integer, const: 20}
+  /api/history/{id}:
+    get:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Снимок текущего браузера
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Result'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/stats:
+    get:
+      responses:
+        '200':
+          description: Статистика текущего браузера
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: {type: integer}
+                  registered: {type: integer}
+                  likelyFree: {type: integer}
+components:
+  responses:
+    Error:
+      description: Ошибка
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+    Finding:
+      type: object
+      required: [status, summary, checkedAt]
+      properties:
+        status: {enum: [ok, warning, missing, neutral, unknown]}
+        summary: {type: string}
+        values: {type: array, items: {type: string}}
+        detail: {type: string}
+        checkedAt: {type: string, format: date-time}
+    Registration:
+      type: object
+      properties:
+        status: {enum: [registered, unregistered, available, unknown]}
+        source: {type: string}
+        detail: {type: string}
+        checkedAt: {type: string, format: date-time}
+    Offer:
+      type: object
+      properties:
+        registrar: {type: string}
+        url: {type: string, format: uri}
+        firstYear: {type: number}
+        renewal: {type: number}
+        currency: {type: string}
+        kind: {enum: [exact, from, catalog]}
+        source: {type: string}
+        sourceDate: {type: string, format: date}
+        stale: {type: boolean}
+        badge: {type: string}
+        promo: {type: boolean}
+        conditions: {type: string}
+    Result:
+      type: object
+      required: [id, input, hostname, domain, registration, site, mail, offers, checkedAt, region, cached]
+      properties:
+        id: {type: string}
+        input: {type: string}
+        hostname: {type: string}
+        domain: {type: string}
+        registration: {$ref: '#/components/schemas/Registration'}
+        site: {type: object, additionalProperties: {$ref: '#/components/schemas/Finding'}}
+        mail: {type: object, additionalProperties: {$ref: '#/components/schemas/Finding'}}
+        offers: {type: array, items: {$ref: '#/components/schemas/Offer'}}
+        checkedAt: {type: string, format: date-time}
+        region: {type: string}
+        cached: {type: boolean}

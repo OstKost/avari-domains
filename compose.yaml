@@ -1,0 +1,18 @@
+services:
+  avari:
+    build: .
+    ports:
+      - "127.0.0.1:${PORT:-18080}:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SQLITE_PATH: /data/avari.sqlite
+      STATIC_DIR: /app/dist
+      LISTEN_ADDR: :8080
+      TRUSTED_PROXY_IPS: 127.0.0.1
+    volumes:
+      - avari_data:/data
+    restart: unless-stopped
+volumes:
+  avari_data:
