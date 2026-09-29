@@ -37,45 +37,209 @@ func priceStale(date string, now time.Time) bool {
 	return err != nil || now.Sub(d) > 7*24*time.Hour
 }
 
-func whois(ctx context.Context, domain string) Registration {
-	opCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	r := Registration{Status: "unknown", Source: "WHOIS whois.tcinet.ru", Detail: "WHOIS недоступен", CheckedAt: time.Now().UTC()}
-	ips, err := resolvedPublic(opCtx, "whois.tcinet.ru")
-	if err != nil {
-		r.Detail = err.Error()
-		return r
+var whoisServers = map[string]string{
+	"ru":          "whois.tcinet.ru",
+	"рф":          "whois.tcinet.ru",
+	"xn--p1ai":    "whois.tcinet.ru",
+	"su":          "whois.tcinet.ru",
+	"by":          "whois.cctld.by",
+	"бел":         "whois.cctld.by",
+	"xn--90ais":   "whois.cctld.by",
+	"kz":          "whois.nic.kz",
+	"қаз":         "whois.nic.kz",
+	"xn--80ao21a": "whois.nic.kz",
+	"uz":          "whois.cctld.uz",
+	"ua":          "whois.ua",
+	"am":          "whois.amnic.net",
+	"ge":          "whois.nic.ge",
+	"tj":          "whois.nic.tj",
+	"kg":          "whois.cctld.kg",
+	"com":         "whois.verisign-grs.com",
+	"net":         "whois.verisign-grs.com",
+	"org":         "whois.pir.org",
+	"info":        "whois.afilias.net",
+	"biz":         "whois.nic.biz",
+	"io":          "whois.nic.io",
+	"me":          "whois.nic.me",
+	"co":          "whois.nic.co",
+	"ai":          "whois.nic.ai",
+	"de":          "whois.denic.de",
+	"uk":          "whois.nic.uk",
+	"eu":          "whois.eu",
+	"fr":          "whois.nic.fr",
+	"nl":          "whois.domain-registry.nl",
+	"ch":          "whois.nic.ch",
+	"it":          "whois.nic.it",
+	"es":          "whois.nic.es",
+	"pl":          "whois.dns.pl",
+	"se":          "whois.iis.se",
+	"no":          "whois.norid.no",
+	"fi":          "whois.fi",
+	"cz":          "whois.nic.cz",
+	"tr":          "whois.nic.tr",
+	"in":          "whois.registry.in",
+	"cn":          "whois.cnnic.cn",
+	"jp":          "whois.jprs.jp",
+	"kr":          "whois.kr",
+	"cc":          "whois.nic.cc",
+	"tv":          "whois.nic.tv",
+	"xyz":         "whois.nic.xyz",
+	"top":         "whois.nic.top",
+	"site":        "whois.nic.site",
+	"online":      "whois.nic.online",
+	"tech":        "whois.nic.tech",
+	"store":       "whois.nic.store",
+	"space":       "whois.nic.space",
+	"club":        "whois.nic.club",
+	"pro":         "whois.nic.pro",
+	"mobi":        "whois.nic.mobi",
+	"app":         "whois.nic.google",
+	"dev":         "whois.nic.google",
+	"page":        "whois.nic.google",
+}
+
+func resolveWhoisServer(ctx context.Context, tld string) string {
+	if s, ok := whoisServers[tld]; ok {
+		return s
 	}
-	d := net.Dialer{Timeout: 5 * time.Second}
+	cHost := tld + ".whois-servers.net"
+	if ips, err := resolvedPublic(ctx, cHost); err == nil && len(ips) > 0 {
+		return cHost
+	}
+	body, err := queryWhoisRaw(ctx, "whois.iana.org", tld)
+	if err == nil {
+		for _, line := range strings.Split(body, "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(strings.ToLower(line), "whois:") {
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					return strings.TrimSpace(parts[1])
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func queryWhoisRaw(ctx context.Context, server, queryStr string) (string, error) {
+	opCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	ips, err := resolvedPublic(opCtx, server)
+	if err != nil {
+		return "", err
+	}
+	d := net.Dialer{Timeout: 3 * time.Second}
 	conn, err := d.DialContext(opCtx, "tcp", net.JoinHostPort(ips[0].String(), "43"))
 	if err != nil {
-		r.Detail = err.Error()
-		return r
+		return "", err
 	}
 	defer conn.Close()
 	if deadline, ok := opCtx.Deadline(); ok {
 		conn.SetDeadline(deadline)
 	}
-	fmt.Fprintf(conn, "%s\r\n", domain)
+	fmt.Fprintf(conn, "%s\r\n", queryStr)
 	b, err := io.ReadAll(io.LimitReader(conn, 65536))
 	if err != nil {
-		r.Detail = err.Error()
+		return "", err
+	}
+	return string(b), nil
+}
+
+func whois(ctx context.Context, domain string) Registration {
+	tld := domain[strings.LastIndex(domain, ".")+1:]
+	server := resolveWhoisServer(ctx, tld)
+	if server == "" {
+		return Registration{
+			Status:    "unknown",
+			Source:    "WHOIS",
+			Detail:    "Сервер WHOIS для зоны не определен",
+			CheckedAt: time.Now().UTC(),
+		}
+	}
+	body, err := queryWhoisRaw(ctx, server, domain)
+	if err != nil {
+		return Registration{
+			Status:    "unknown",
+			Source:    "WHOIS " + server,
+			Detail:    "WHOIS недоступен: " + err.Error(),
+			CheckedAt: time.Now().UTC(),
+		}
+	}
+	return classifyWHOISWithServer(domain, server, body, time.Now().UTC())
+}
+
+func classifyWHOIS(domain, body string, checkedAt time.Time) Registration {
+	return classifyWHOISWithServer(domain, "whois.tcinet.ru", body, checkedAt)
+}
+
+func classifyWHOISWithServer(domain, server, body string, checkedAt time.Time) Registration {
+	r := Registration{Status: "unknown", Source: "WHOIS " + server, CheckedAt: checkedAt}
+	s := strings.ToLower(body)
+
+	if strings.Contains(s, "quota exceeded") ||
+		strings.Contains(s, "limit exceeded") ||
+		strings.Contains(s, "query limit") ||
+		strings.Contains(s, "access denied") ||
+		strings.Contains(s, "too many requests") ||
+		strings.Contains(s, "try again later") {
+		r.Detail = "WHOIS ограничил число запросов"
 		return r
 	}
-	return classifyWHOIS(domain, string(b), r.CheckedAt)
-}
-func classifyWHOIS(domain, body string, checkedAt time.Time) Registration {
-	r := Registration{Status: "unknown", Source: "WHOIS whois.tcinet.ru", CheckedAt: checkedAt}
-	s := strings.ToLower(body)
-	if strings.Contains(s, "no entries found") || strings.Contains(s, "not found") || strings.Contains(s, "no matching record") {
-		r.Status = "unregistered"
-		r.Detail = "Регистрационная запись не найдена; доступность подтвердит регистратор"
-	} else if strings.Contains(s, "domain:") && strings.Contains(s, strings.ToLower(domain)) {
-		r.Status = "registered"
-		r.Detail = "Регистрационная запись найдена"
-	} else {
-		r.Detail = "WHOIS вернул неопределённый ответ"
+
+	unregisteredPhrases := []string{
+		"no entries found",
+		"not found",
+		"no match",
+		"no matching record",
+		"domain not found",
+		"status: free",
+		"is available",
+		"nothing found",
+		"no data found",
+		"object does not exist",
+		"the queried object does not exist",
+		"not registered",
+		"available for registration",
+		"domain status: free",
+		"domain status: available",
 	}
+	for _, phrase := range unregisteredPhrases {
+		if strings.Contains(s, phrase) {
+			r.Status = "unregistered"
+			r.Detail = "Регистрационная запись не найдена; доступность подтвердит регистратор"
+			return r
+		}
+	}
+
+	registeredPhrases := []string{
+		"domain name:",
+		"registry domain id:",
+		"creation date:",
+		"created:",
+		"registered on:",
+		"registration time:",
+		"nserver:",
+		"nameserver:",
+		"name server:",
+		"status: registered",
+		"state: registered",
+		"status: active",
+		"status: connect",
+		"status: ok",
+		"admin-c:",
+		"person:",
+		"registrar:",
+		"domain:",
+	}
+	for _, phrase := range registeredPhrases {
+		if strings.Contains(s, phrase) {
+			r.Status = "registered"
+			r.Detail = "Регистрационная запись найдена"
+			return r
+		}
+	}
+
+	r.Detail = "WHOIS вернул неопределённый ответ"
 	return r
 }
 func registrarURL(name, domain string) string {

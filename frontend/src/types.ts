@@ -34,6 +34,9 @@ export type Result = {
   site: Record<string, Finding>;
   mail: Record<string, Finding>;
   offers: Offer[];
+  preview: { title: string; description: string; image: string; siteName: string; url: string; status: string; summary: string };
+  robots?: Finding;
+  sitemap?: Finding;
   checkedAt: string;
   region: string;
   cached: boolean;

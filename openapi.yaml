@@ -92,9 +92,10 @@ components:
     ApiError:
       type: object
       required: [code, message]
+      description: code is a stable English identifier for client-side localization; message is an English diagnostic string for debugging and must not be shown directly to end users.
       properties:
-        code: {type: string}
-        message: {type: string}
+        code: {type: string, description: Stable English error identifier used to select a localized user message.}
+        message: {type: string, description: English diagnostic detail for logs and debugging.}
     Finding:
       type: object
       required: [status, summary, checkedAt]

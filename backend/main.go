@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -62,7 +63,7 @@ func main() {
 	static := env("STATIC_DIR", "../frontend/dist")
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
-			apiError(w, 404, "not_found", "Маршрут не найден")
+			apiError(w, 404, "not_found", "API route was not found")
 			return
 		}
 		p := filepath.Clean(r.URL.Path)
@@ -156,7 +157,7 @@ func (s *server) check(w http.ResponseWriter, r *http.Request) {
 	session := s.session(w, r)
 	if !s.allow(s.clientIP(r)) {
 		w.Header().Set("Retry-After", "3")
-		apiError(w, 429, "rate_limited", "Слишком много запросов. Повторите через несколько секунд")
+		apiError(w, 429, "rate_limited", "Client exceeded the request rate limit")
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
@@ -164,12 +165,17 @@ func (s *server) check(w http.ResponseWriter, r *http.Request) {
 		Input string `json:"input"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
-		apiError(w, 400, "invalid_json", "Некорректный JSON")
+		apiError(w, 400, "invalid_json", "Request body is not valid JSON")
 		return
 	}
 	host, domain, err := normalizeInput(req.Input)
 	if err != nil {
-		apiError(w, 400, "invalid_input", err.Error())
+		var validationErr inputValidationError
+		if errors.As(err, &validationErr) {
+			apiError(w, 400, validationErr.code, validationErr.message)
+		} else {
+			apiError(w, 400, "invalid_input", "Input validation failed")
+		}
 		return
 	}
 	var result Result
@@ -202,7 +208,7 @@ func (s *server) check(w http.ResponseWriter, r *http.Request) {
 			return res, nil
 		})
 		if err != nil {
-			apiError(w, 503, "busy", "Проверка сейчас недоступна. Повторите позже")
+			apiError(w, 503, "busy", "All diagnostic workers are busy or timed out")
 			return
 		}
 		result = v.(Result)
@@ -219,12 +225,12 @@ func (s *server) history(w http.ResponseWriter, r *http.Request) {
 	session := s.session(w, r)
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 0 || page > 10000 {
-		apiError(w, 400, "invalid_page", "Некорректная страница")
+		apiError(w, 400, "invalid_page", "Page index is outside the supported range")
 		return
 	}
 	items, err := s.store.history(session, page)
 	if err != nil {
-		apiError(w, 500, "storage_error", "Не удалось загрузить историю")
+		apiError(w, 500, "storage_error", "Failed to read browser history from storage")
 		return
 	}
 	respond(w, 200, map[string]any{"items": items, "page": page, "pageSize": 20})
@@ -233,7 +239,7 @@ func (s *server) historyItem(w http.ResponseWriter, r *http.Request) {
 	session := s.session(w, r)
 	item, err := s.store.item(session, r.PathValue("id"))
 	if err != nil {
-		apiError(w, 404, "not_found", "Результат не найден")
+		apiError(w, 404, "not_found", "History result was not found for this browser session")
 		return
 	}
 	respond(w, 200, item)
@@ -242,7 +248,7 @@ func (s *server) stats(w http.ResponseWriter, r *http.Request) {
 	session := s.session(w, r)
 	v, err := s.store.stats(session)
 	if err != nil {
-		apiError(w, 500, "storage_error", "Не удалось загрузить статистику")
+		apiError(w, 500, "storage_error", "Failed to read browser statistics from storage")
 		return
 	}
 	respond(w, 200, v)

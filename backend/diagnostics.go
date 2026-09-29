@@ -5,14 +5,17 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/miekg/dns"
+	"golang.org/x/net/html"
 )
 
 var selectors = []string{"default", "selector1", "selector2", "google", "k1", "k2", "mail", "smtp", "dkim", "s1", "s2"}
@@ -54,7 +57,7 @@ func (c *Checker) run(ctx context.Context, input, host, domain string) Result {
 	r := Result{Input: input, Hostname: host, Domain: domain, Site: map[string]Finding{}, Mail: map[string]Finding{}, Offers: []Offer{}, CheckedAt: time.Now().UTC(), Region: env("CHECK_REGION", "не указан")}
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	tasks := []func(){func() { x := c.registration(ctx, domain); mu.Lock(); r.Registration = x; mu.Unlock() }, func() {
+	tasks := []func(){func() { x := c.registration(ctx, domain); mu.Lock(); r.Registration = x; mu.Unlock() }, func() { r.Preview = sitePreview(ctx, host) }, func() { r.Robots = checkRobots(ctx, host) }, func() { r.Sitemap = checkSitemap(ctx, host) }, func() {
 		x := siteDNS(ctx, host, domain)
 		mu.Lock()
 		for k, v := range x {
@@ -76,7 +79,172 @@ func (c *Checker) run(ctx context.Context, input, host, domain string) Result {
 			}
 		}
 	}
+	if r.Registration.Status == "unknown" {
+		if (r.Site["ns"].Status == "ok" && len(r.Site["ns"].Values) > 0) ||
+			(r.Site["a"].Status == "ok" && len(r.Site["a"].Values) > 0) ||
+			(r.Mail["mx"].Status == "ok" && len(r.Mail["mx"].Values) > 0) {
+			r.Registration.Status = "registered"
+			r.Registration.Source = "DNS"
+			r.Registration.Detail = "Домен активен и делегирован (найдены активные DNS-записи)"
+		}
+	}
 	return r
+}
+
+func checkRobots(ctx context.Context, host string) Finding {
+	f := finding("unknown", "Не удалось проверить robots.txt")
+	f.Values = []string{"https://" + host + "/robots.txt"}
+	code, _, body, err := requestPinned(ctx, f.Values[0], "GET", 256*1024)
+	if err != nil {
+		f.Detail = "Проверьте доступность сайта по HTTPS и повторите проверку."
+		return f
+	}
+	if code == 404 {
+		f.Status, f.Summary, f.Detail = "warning", "robots.txt не найден", "Если сайт должен появляться в поиске, добавьте robots.txt с правилами для роботов и ссылкой на sitemap.xml."
+		return f
+	}
+	if code < 200 || code >= 400 {
+		f.Detail = fmt.Sprintf("Сервер ответил кодом %d. Проверьте доступность файла для поисковых роботов.", code)
+		return f
+	}
+	text := strings.ToLower(string(body))
+	blockedAll := false
+	userAgentAll := false
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		key, value = strings.TrimSpace(key), strings.TrimSpace(value)
+		if key == "user-agent" {
+			userAgentAll = value == "*"
+		}
+		if key == "disallow" && value == "/" && userAgentAll {
+			blockedAll = true
+		}
+	}
+	f.Status, f.Summary = "ok", "robots.txt доступен"
+	if blockedAll {
+		f.Status, f.Summary = "warning", "robots.txt закрывает сайт от индексации"
+		f.Detail = "Для группы User-agent: * указан Disallow: /. Уберите это правило, если сайт должен индексироваться."
+	} else {
+		f.Detail = "Базово проверьте, что важные страницы не закрыты директивой Disallow и служебные разделы исключены."
+	}
+	return f
+}
+
+func checkSitemap(ctx context.Context, host string) Finding {
+	f := finding("unknown", "Не удалось проверить sitemap.xml")
+	f.Values = []string{"https://" + host + "/sitemap.xml"}
+	code, _, body, err := requestPinned(ctx, f.Values[0], "GET", 512*1024)
+	if err != nil {
+		f.Detail = "Проверьте доступность сайта по HTTPS и повторите проверку."
+		return f
+	}
+	if code == 404 {
+		f.Status, f.Summary, f.Detail = "warning", "Карта сайта не найдена по стандартному адресу", "Если на сайте много страниц, создайте sitemap.xml и укажите его в robots.txt и панели вебмастера."
+		return f
+	}
+	if code < 200 || code >= 400 {
+		f.Detail = fmt.Sprintf("Сервер ответил кодом %d. Проверьте, что карта сайта доступна без авторизации.", code)
+		return f
+	}
+	var doc struct {
+		XMLName xml.Name
+		Entries []struct {
+			Loc string `xml:"loc"`
+		} `xml:"url"`
+		Maps []struct {
+			Loc string `xml:"loc"`
+		} `xml:"sitemap"`
+	}
+	if err := xml.Unmarshal(body, &doc); err != nil || (doc.XMLName.Local != "urlset" && doc.XMLName.Local != "sitemapindex") {
+		f.Status, f.Summary, f.Detail = "warning", "Файл найден, но формат похож на некорректный", "Проверьте XML-разметку и стандартный формат sitemap."
+		return f
+	}
+	count := len(doc.Entries)
+	if doc.XMLName.Local == "sitemapindex" {
+		count = len(doc.Maps)
+	}
+	f.Status, f.Summary = "ok", "Карта сайта доступна"
+	if count == 0 {
+		f.Status, f.Summary = "warning", "В карте сайта нет URL"
+		f.Detail = "Добавьте канонические страницы, которые должны индексироваться."
+	} else {
+		f.Detail = fmt.Sprintf("В основном файле обнаружено записей: %d. Проверьте, что это канонические страницы с кодом ответа 200.", count)
+	}
+	return f
+}
+
+func sitePreview(ctx context.Context, host string) Preview {
+	p := Preview{URL: "https://" + host + "/", Status: "unknown", Summary: "Не удалось получить метаданные страницы"}
+	code, _, body, err := requestPinned(ctx, p.URL, "GET", 512*1024)
+	if err != nil || code < 200 || code >= 400 {
+		return p
+	}
+	p.Status, p.Summary = "ok", "Метаданные страницы загружены"
+	base, _ := url.Parse(p.URL)
+	z := html.NewTokenizer(strings.NewReader(string(body)))
+	for z.Next() != html.ErrorToken {
+		t := z.Token()
+		if t.Type == html.StartTagToken && strings.EqualFold(t.Data, "title") {
+			if z.Next() == html.TextToken {
+				p.Title = strings.TrimSpace(z.Token().Data)
+			}
+		}
+		if t.Type != html.StartTagToken || !strings.EqualFold(t.Data, "meta") {
+			continue
+		}
+		attrs := map[string]string{}
+		for _, a := range t.Attr {
+			attrs[strings.ToLower(a.Key)] = strings.TrimSpace(a.Val)
+		}
+		key := strings.ToLower(attrs["property"])
+		if key == "" {
+			key = strings.ToLower(attrs["name"])
+		}
+		value := attrs["content"]
+		switch key {
+		case "og:title":
+			if p.Title == "" {
+				p.Title = value
+			}
+		case "twitter:title":
+			if p.Title == "" {
+				p.Title = value
+			}
+		case "description", "og:description":
+			if p.Description == "" {
+				p.Description = value
+			}
+		case "twitter:description":
+			if p.Description == "" {
+				p.Description = value
+			}
+		case "og:site_name":
+			p.SiteName = value
+		case "og:image", "og:image:url", "twitter:image":
+			if p.Image == "" && value != "" {
+				if ref, e := url.Parse(value); e == nil {
+					ref = base.ResolveReference(ref)
+					if (ref.Scheme == "https" || ref.Scheme == "http") && ref.User == nil {
+						p.Image = ref.String()
+					}
+				}
+			}
+		}
+	}
+	if p.Title == "" {
+		p.Title = host
+	}
+	if p.Description == "" {
+		p.Description = "Описание для предпросмотра не задано"
+	}
+	if p.SiteName == "" {
+		p.SiteName = host
+	}
+	return p
 }
 func query(ctx context.Context, name string, qtype uint16, server string) ([]dns.RR, int, error) {
 	m := new(dns.Msg)
@@ -349,21 +517,31 @@ func dmarcWith(ctx context.Context, host, domain string, lookup lookupFn) Findin
 }
 func (c *Checker) registration(ctx context.Context, domain string) Registration {
 	now := time.Now().UTC()
-	reg := Registration{Status: "unknown", Source: "RDAP", Detail: "Не удалось определить статус", CheckedAt: now}
-	if strings.HasSuffix(domain, ".ru") || strings.HasSuffix(domain, ".xn--p1ai") {
+	if strings.HasSuffix(domain, ".ru") || strings.HasSuffix(domain, ".xn--p1ai") || strings.HasSuffix(domain, ".su") {
 		return whois(ctx, domain)
 	}
 	url := c.rdapURL(ctx, domain)
+	if url != "" {
+		code, _, _, err := requestPinned(ctx, url, "GET", 128*1024)
+		if err == nil {
+			reg := classifyRDAP(code, now)
+			if reg.Status == "registered" || reg.Status == "unregistered" {
+				return reg
+			}
+		}
+	}
+	// Fallback to WHOIS if RDAP was absent or inconclusive/failed
+	wReg := whois(ctx, domain)
+	if wReg.Status == "registered" || wReg.Status == "unregistered" {
+		return wReg
+	}
+	if wReg.Detail != "" && !strings.Contains(wReg.Detail, "не определен") {
+		return wReg
+	}
 	if url == "" {
-		reg.Detail = "Для этой зоны нет RDAP-сервера в IANA"
-		return reg
+		return Registration{Status: "unknown", Source: "RDAP/WHOIS", Detail: "Для этой зоны нет данных RDAP и WHOIS", CheckedAt: now}
 	}
-	code, _, _, err := requestPinned(ctx, url, "GET", 128*1024)
-	if err != nil {
-		reg.Detail = "RDAP недоступен: " + err.Error()
-		return reg
-	}
-	return classifyRDAP(code, now)
+	return Registration{Status: "unknown", Source: "RDAP", Detail: "Не удалось определить статус через RDAP и WHOIS", CheckedAt: now}
 }
 func classifyRDAP(code int, now time.Time) Registration {
 	reg := Registration{Status: "unknown", Source: "RDAP", CheckedAt: now}
