@@ -1,5 +1,11 @@
 FROM node:24-alpine AS frontend
 WORKDIR /app/frontend
+ARG VITE_YM_ID=113253415
+ARG VITE_YM_WEBVISOR=true
+ARG VITE_GA_ID=
+ENV VITE_YM_ID=$VITE_YM_ID
+ENV VITE_YM_WEBVISOR=$VITE_YM_WEBVISOR
+ENV VITE_GA_ID=$VITE_GA_ID
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./

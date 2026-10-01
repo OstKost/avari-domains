@@ -443,22 +443,98 @@ p {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 13px;
 }
-.preview-panel { display: grid; gap: 14px; }
-.crawl-panel { max-width: 760px; display: grid; gap: 10px; align-content: start; }
-.crawl-recommendation { margin: 0; padding: 14px 16px; border: 1px solid #42617a80; border-radius: 10px; background: #102131; color: #bed0dd; font-size: 13px; line-height: 1.55; }
-.crawl-recommendation b { color: #ffb37d; }
-.preview-note, .preview-meta { color: #91a8ba; font-size: 12px; margin: 0; }
-.preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
-.preview-card { min-width: 0; padding: 20px; border: 1px solid #31516a80; border-radius: 12px; background: #f8fafc; color: #17212b; display: grid; gap: 7px; }
-.preview-card > small { color: #64748b; font: 10px "JetBrains Mono", monospace; letter-spacing: .1em; }
-.preview-card a { color: #1a0dab; font-size: 18px; font-weight: 500; text-decoration: none; overflow-wrap: anywhere; }
-.preview-card > span { color: #16804a; font-size: 12px; overflow-wrap: anywhere; }
-.preview-card p { color: #475569; font-size: 13px; line-height: 1.5; margin: 0; }
-.messenger-preview { background: #e8f0f7; border-color: #d4e1ed; border-radius: 14px; }
-.messenger-preview img { width: 100%; max-height: 210px; object-fit: cover; border-radius: 8px; }
-.messenger-preview b { font-size: 15px; }
-.messenger-preview > span { color: #64748b; }
-@media (max-width: 640px) { .preview-grid { grid-template-columns: 1fr; } }
+.preview-panel {
+  display: grid;
+  gap: 14px;
+}
+.crawl-panel {
+  max-width: 760px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.crawl-recommendation {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid #42617a80;
+  border-radius: 10px;
+  background: #102131;
+  color: #bed0dd;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.crawl-recommendation b {
+  color: #ffb37d;
+}
+.preview-note,
+.preview-meta {
+  color: #91a8ba;
+  font-size: 12px;
+  margin: 0;
+}
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.preview-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #31516a80;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #17212b;
+  display: grid;
+  gap: 7px;
+}
+.preview-card > small {
+  color: #64748b;
+  font:
+    10px "JetBrains Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+.preview-card a {
+  color: #1a0dab;
+  font-size: 18px;
+  font-weight: 500;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.preview-card > span {
+  color: #16804a;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.preview-card p {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+.messenger-preview {
+  background: #e8f0f7;
+  border-color: #d4e1ed;
+  border-radius: 14px;
+}
+.messenger-preview img {
+  width: 100%;
+  max-height: 210px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.messenger-preview b {
+  font-size: 15px;
+}
+.messenger-preview > span {
+  color: #64748b;
+}
+@media (max-width: 640px) {
+  .preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .check-card {
   background: #0f1b29;
   border: 1px solid #31516a60;
@@ -906,7 +982,10 @@ footer .shell {
   justify-content: center;
   color: #c5e4f6;
   background: #101e2b;
-  font: 700 11px/1 Manrope, Arial, sans-serif;
+  font:
+    700 11px/1 Manrope,
+    Arial,
+    sans-serif;
   cursor: pointer;
   align-self: center;
   transition: all 0.15s ease;
@@ -937,14 +1016,18 @@ footer .language-switch {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45), 0 0 16px rgba(134, 232, 255, 0.12);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(134, 232, 255, 0.12);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .scroll-top-btn:hover {
   border-color: #86e8ff;
   color: #ffffff;
   background: rgba(22, 43, 62, 0.98);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 0 22px rgba(134, 232, 255, 0.35);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.55),
+    0 0 22px rgba(134, 232, 255, 0.35);
   transform: translateY(-2px);
 }
 .scroll-top-btn:active {

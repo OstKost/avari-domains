@@ -1,18 +1,201 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#080e18" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Avari Domains — проверка домена, сайта и почты</title>
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Primary Meta Tags -->
+    <title>Avari Domains — проверка домена, сайта, DNS и почты</title>
+    <meta
+      name="title"
+      content="Avari Domains — проверка домена, сайта, DNS и почты"
+    />
     <meta
       name="description"
-      content="Проверьте регистрацию домена, сайт, DNS и почту в одном месте."
+      content="Бесплатная комплексная проверка регистрации домена (WHOIS / RDAP), доступности сайта, DNS-записей, TLS-сертификатов, а также почтовых протоколов MX, SPF, DKIM и DMARC."
     />
+    <meta
+      name="keywords"
+      content="проверка домена, whois, rdap, dns проверка, проверка spf dkim dmarc, доступность сайта, tls сертификат, купить домен, диагностика домена, check domain"
+    />
+    <meta name="author" content="Avari" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+
+    <!-- Canonical & Multilingual / Regional Links -->
+    <link rel="canonical" href="https://domains.avari.dev/" />
+    <link rel="alternate" hreflang="ru" href="https://domains.avari.dev/" />
+    <link rel="alternate" hreflang="en" href="https://domains.avari.dev/en" />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://domains.avari.dev/"
+    />
+
+    <!-- GEO Optimization Tags -->
+    <meta name="geo.region" content="RU" />
+    <meta name="geo.placename" content="Global" />
+
+    <!-- Open Graph / Facebook / VK / Telegram -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://domains.avari.dev/" />
+    <meta property="og:site_name" content="Avari Domains" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta
+      property="og:title"
+      content="Avari Domains — диагностика домена, сайта, DNS, TLS и почты"
+    />
+    <meta
+      property="og:description"
+      content="Мгновенная диагностика домена, проверка RDAP/WHOIS, согласованности DNS, TLS и почтовых политик SPF/DKIM/DMARC в одном отчёте."
+    />
+    <meta
+      property="og:image"
+      content="https://domains.avari.dev/og-image.svg"
+    />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Avari Domains — сервис проверки доменов и почтовых записей"
+    />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://domains.avari.dev/" />
+    <meta
+      name="twitter:title"
+      content="Avari Domains — диагностика домена, сайта, DNS, TLS и почты"
+    />
+    <meta
+      name="twitter:description"
+      content="Мгновенная диагностика домена, проверка RDAP/WHOIS, согласованности DNS, TLS и почтовых политик SPF/DKIM/DMARC в одном отчёте."
+    />
+    <meta
+      name="twitter:image"
+      content="https://domains.avari.dev/og-image.svg"
+    />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Performance: Preconnect & Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://domains.avari.dev/#app",
+            "name": "Avari Domains",
+            "url": "https://domains.avari.dev/",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "All",
+            "inLanguage": ["ru", "en"],
+            "description": "Сервис для комплексной технической диагностики доменов, веб-сайтов, DNS, TLS и почтовых записей SPF, DKIM, DMARC.",
+            "featureList": [
+              "Проверка регистрации через RDAP и WHOIS",
+              "Диагностика DNS: A, AAAA, CNAME, NS и согласованность делегирования",
+              "Проверка TLS-сертификатов и протоколов HTTP/HTTPS",
+              "Аудит почтовых записей MX, SPF, DKIM и DMARC",
+              "Сравнение цен регистрации и продления у популярных регистраторов",
+              "История проверок без передачи конфиденциальных данных"
+            ],
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://domains.avari.dev/#organization",
+            "name": "Avari",
+            "url": "https://avari.dev",
+            "logo": "https://domains.avari.dev/favicon.svg"
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://domains.avari.dev/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Как проверить свободен ли домен?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Введите интересующее доменное имя в строку поиска Avari Domains. Сервис выполнит запрос к официальным серверам RDAP и резервным серверам WHOIS, чтобы точно определить статус регистрации."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Зачем проверять записи SPF, DKIM и DMARC?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Корректная настройка записей SPF, DKIM и DMARC защищает домен от подделки писем (email spoofing, фишинг) и гарантирует высокую доставляемость исходящей почты."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Что делать, если статус домена 'Неизвестен'?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Если сервер регистратора не отвечает или возвращает нестандартный ответ, Avari Domains честно сообщает о неизвестном статусе вместо того, чтобы ложно объявлять домен свободным."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <noscript>
+        <div
+          style="
+            font-family: system-ui, sans-serif;
+            padding: 32px;
+            color: #e9f2fc;
+            background: #080e18;
+            min-height: 100vh;
+          "
+        >
+          <h1>Avari Domains — проверка домена, сайта и почты</h1>
+          <p>
+            Сервис технической диагностики доменов, DNS, TLS и почтовых записей
+            SPF/DKIM/DMARC.
+          </p>
+          <p>
+            Для использования интерактивного поиска, пожалуйста, включите
+            JavaScript в вашем браузере.
+          </p>
+        </div>
+      </noscript>
+    </div>
+    <!-- Yandex.Metrika noscript fallback -->
+    <noscript>
+      <div>
+        <img
+          src="https://mc.yandex.ru/watch/113253415"
+          style="position: absolute; left: -9999px"
+          alt=""
+        />
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

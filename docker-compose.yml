@@ -1,6 +1,11 @@
 services:
   avari:
-    build: .
+    build:
+      context: .
+      args:
+        VITE_YM_ID: ${VITE_YM_ID:-113253415}
+        VITE_YM_WEBVISOR: ${VITE_YM_WEBVISOR:-true}
+        VITE_GA_ID: ${VITE_GA_ID:-}
     ports:
       - "127.0.0.1:${PORT:-18080}:8080"
     env_file:
