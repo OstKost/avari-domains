@@ -16,6 +16,9 @@ services:
       STATIC_DIR: /app/dist
       LISTEN_ADDR: :8080
       TRUSTED_PROXY_IPS: 127.0.0.1
+      PORKBUN_API_KEY: ${PORKBUN_API_KEY:-}
+      PORKBUN_SECRET_API_KEY: ${PORKBUN_SECRET_API_KEY:-}
+      REG_RU_URL: ${REG_RU_URL:-}
     volumes:
       - avari_data:/data
     restart: unless-stopped

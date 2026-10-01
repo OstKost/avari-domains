@@ -71,7 +71,15 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          PORKBUN_API_KEY: ${{ secrets.PORKBUN_API_KEY }}
+          PORKBUN_SECRET_API_KEY: ${{ secrets.PORKBUN_SECRET_API_KEY }}
+          REG_RU_URL: ${{ secrets.REG_RU_URL }}
         run: |
+          cat <<EOF > .env.deploy
+          PORKBUN_API_KEY=${PORKBUN_API_KEY}
+          PORKBUN_SECRET_API_KEY=${PORKBUN_SECRET_API_KEY}
+          REG_RU_URL=${REG_RU_URL}
+          EOF
           tar -czf - \
             --exclude='./.git' --exclude='./.env' --exclude='./data' \
             --exclude='./*.sqlite*' --exclude='./frontend/node_modules' \

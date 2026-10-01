@@ -255,7 +255,7 @@ func registrarURL(name, domain string) string {
 	case "GoDaddy":
 		return "https://www.godaddy.com/domainsearch/find?domainToCheck=" + url.QueryEscape(domain)
 	case "REG.RU":
-		return "https://www.reg.ru/domain/new/?dname=" + url.QueryEscape(domain)
+		return "https://www.reg.ru/domain/new/?dname=" + url.QueryEscape(domain) + "&rlink=reflink-32520707"
 	default:
 		return "https://timeweb.com/ru/services/domains/"
 	}
