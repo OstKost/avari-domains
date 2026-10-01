@@ -3,10 +3,8 @@ set -euo pipefail
 
 app_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 site_conf=/opt/om/nginx/conf/sites/8.conf
-apex_site_conf=/opt/om/nginx/conf/sites/9.conf
 challenge_dir=/var/www/letsencrypt
 domain=domains.avari.dev
-apex_domain=avari.dev
 
 cd "$app_dir"
 
@@ -17,18 +15,12 @@ sudo install -m 755 deploy/certbot-openresty-reload.sh \
 if sudo test -f "$site_conf" && ! sudo test -f "$site_conf.avari-domains-original"; then
   sudo cp -a "$site_conf" "$site_conf.avari-domains-original"
 fi
-if sudo test -f "$apex_site_conf" && ! sudo test -f "$apex_site_conf.avari-domains-original"; then
-  sudo cp -a "$apex_site_conf" "$apex_site_conf.avari-domains-original"
-fi
-if sudo test -f "$apex_site_conf"; then
-  sudo mv -f "$apex_site_conf" "$apex_site_conf.avari-domains-disabled"
-fi
 # Issue the certificate while the HTTP challenge location is already active.
 if ! sudo test -s "/etc/letsencrypt/live/$domain/fullchain.pem"; then
   sudo install -m 644 deploy/openresty-domains-acme.conf "$site_conf"
   sudo /usr/bin/openresty -p /opt/om/nginx/ -t
   sudo /usr/bin/openresty -p /opt/om/nginx/ -s reload
-  sudo certbot certonly --webroot -w "$challenge_dir" -d "$domain" -d "$apex_domain" \
+  sudo certbot certonly --webroot -w "$challenge_dir" -d "$domain" \
     --non-interactive --agree-tos --register-unsafely-without-email
 fi
 
