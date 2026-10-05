@@ -53,6 +53,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dist-and-bin
+      - name: Make binary executable
+        run: chmod +x bin/avari
       - id: deployment-secrets
         name: Check deployment secrets
         env:
