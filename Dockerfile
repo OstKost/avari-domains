@@ -1,27 +1,7 @@
-FROM node:24-alpine AS frontend
-WORKDIR /app/frontend
-ARG VITE_YM_ID=113253415
-ARG VITE_YM_WEBVISOR=true
-ARG VITE_GA_ID=
-ENV VITE_YM_ID=$VITE_YM_ID
-ENV VITE_YM_WEBVISOR=$VITE_YM_WEBVISOR
-ENV VITE_GA_ID=$VITE_GA_ID
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-FROM golang:1.27-alpine AS backend
-WORKDIR /app/backend
-COPY backend/go.mod backend/go.sum ./
-RUN go mod download
-COPY backend/ ./
-RUN CGO_ENABLED=0 go build -o /avari .
-
-FROM alpine:3.22
+FROM alpine:3.21
 RUN addgroup -S avari && adduser -S -G avari avari && mkdir /data /app && chown avari:avari /data
-COPY --from=backend /avari /app/avari
-COPY --from=frontend /app/frontend/dist /app/dist
+COPY bin/avari /app/avari
+COPY frontend/dist /app/dist
 USER avari
 ENV SQLITE_PATH=/data/avari.sqlite STATIC_DIR=/app/dist LISTEN_ADDR=:8080
 EXPOSE 8080

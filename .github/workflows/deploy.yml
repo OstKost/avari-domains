@@ -35,7 +35,14 @@ jobs:
         run: npm ci && npm run build
       - name: Build backend
         working-directory: backend
-        run: go build ./...
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o ../bin/avari .
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-and-bin
+          path: |
+            bin/avari
+            frontend/dist/
 
   deploy:
     needs: build
@@ -43,6 +50,9 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-and-bin
       - id: deployment-secrets
         name: Check deployment secrets
         env:
@@ -83,7 +93,7 @@ jobs:
           tar -czf - \
             --exclude='./.git' --exclude='./.env' --exclude='./data' \
             --exclude='./*.sqlite*' --exclude='./frontend/node_modules' \
-            --exclude='./frontend/dist' --exclude='./Avari Domains Artifact' . \
+            --exclude='./Avari Domains Artifact' . \
             | ssh -T -i ~/.ssh/id_ed25519 "$VPS_USER@$VPS_HOST"
       - name: Report deployment
         if: steps.deployment-secrets.outputs.configured == 'true'
