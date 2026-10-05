@@ -3,6 +3,5 @@
 .env
 data/
 frontend/node_modules/
-frontend/dist/
 frontend/*.tsbuildinfo
 Avari Domains Artifact/
