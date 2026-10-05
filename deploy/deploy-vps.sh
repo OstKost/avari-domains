@@ -27,7 +27,7 @@ fi
 sudo install -m 644 deploy/openresty-domains.conf "$site_conf"
 sudo /usr/bin/openresty -p /opt/om/nginx/ -t
 sudo /usr/bin/openresty -p /opt/om/nginx/ -s reload
-sudo docker compose up -d --build --remove-orphans
+sudo DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose up -d --build --remove-orphans
 
 for attempt in {1..30}; do
   if curl --fail --silent http://127.0.0.1:18080/api/health >/dev/null; then
