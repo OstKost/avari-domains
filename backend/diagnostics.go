@@ -250,11 +250,19 @@ func query(ctx context.Context, name string, qtype uint16, server string) ([]dns
 	m := new(dns.Msg)
 	m.SetQuestion(dns.Fqdn(name), qtype)
 	m.SetEdns0(1232, true)
-	cl := &dns.Client{Timeout: 4 * time.Second}
+	cl := &dns.Client{Timeout: 3 * time.Second}
 	res, _, err := cl.ExchangeContext(ctx, m, net.JoinHostPort(server, "53"))
 	if err == nil && res.Truncated {
 		cl.Net = "tcp"
 		res, _, err = cl.ExchangeContext(ctx, m, net.JoinHostPort(server, "53"))
+	}
+	// If UDP times out or fails with I/O error, retry over TCP
+	if err != nil {
+		tcpClient := &dns.Client{Net: "tcp", Timeout: 3 * time.Second}
+		if tcpRes, _, tcpErr := tcpClient.ExchangeContext(ctx, m, net.JoinHostPort(server, "53")); tcpErr == nil {
+			res = tcpRes
+			err = nil
+		}
 	}
 	if err != nil {
 		return nil, 0, err
@@ -268,7 +276,23 @@ func query(ctx context.Context, name string, qtype uint16, server string) ([]dns
 	return res.Answer, res.Rcode, nil
 }
 func records(ctx context.Context, name string, qtype uint16) ([]dns.RR, int, error) {
-	return query(ctx, name, qtype, env("DNS_RESOLVER", "1.1.1.1"))
+	rawResolvers := env("DNS_RESOLVER", "77.88.8.8,1.1.1.1,8.8.8.8")
+	resolvers := strings.Split(rawResolvers, ",")
+	var lastErr error
+	var lastRcode int
+	for _, r := range resolvers {
+		r = strings.TrimSpace(r)
+		if r == "" {
+			continue
+		}
+		rr, rcode, err := query(ctx, name, qtype, r)
+		if err == nil {
+			return rr, rcode, nil
+		}
+		lastErr = err
+		lastRcode = rcode
+	}
+	return nil, lastRcode, lastErr
 }
 func rrValues(rr []dns.RR) []string {
 	out := []string{}

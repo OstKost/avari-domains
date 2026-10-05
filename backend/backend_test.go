@@ -216,6 +216,9 @@ func TestOfferCatalogAndComparison(t *testing.T) {
 		t.Fatalf("unverified offer: %+v", godaddy)
 	}
 	porkbun := catalogOffer("Porkbun", "example.com", "com")
+	porkbun.Stale = false
+	namecheap.Stale = false
+	timeweb.Stale = false
 	offers := markBestOffers([]Offer{porkbun, namecheap, timeweb, godaddy})
 	if offers[0].Badge != "Минимальный тариф от" || offers[1].Badge != "Минимальный тариф от" || offers[2].Badge != "Минимальный тариф от" || offers[3].Badge != "" {
 		t.Fatalf("bad comparison: %+v", offers)
